@@ -1,22 +1,22 @@
-// lib/session.ts (updated)
+// lib/session.ts
 import { cookies } from "next/headers";
-import crypto from "crypto";
 
-const sessions = new Map<string, string>(); // sessionId -> email
+// In-memory session store (replace with database in production)
+const sessions = new Map<string, string>();
 
 export function createSession(email: string) {
-  const sessionId = crypto.randomUUID();
-  sessions.set(sessionId, email);
-  cookies().set("session", sessionId, {
+  const sessionToken = Math.random().toString(36).substring(2);
+  sessions.set(sessionToken, email);
+  
+  cookies().set("session", sessionToken, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
   });
 }
 
-export function getSessionEmailServer(): string | null {
-  const sessionId = cookies().get("session")?.value;
-  if (!sessionId) return null;
-  return sessions.get(sessionId) || null;
+export async function getSessionEmailServer() {
+  const sessionToken = cookies().get("session")?.value;
+  return sessionToken ? sessions.get(sessionToken) : null;
 }

@@ -1,22 +1,23 @@
 // app/api/login/route.ts
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import { users } from "@/lib/users";
 import { createSession } from "@/lib/session";
-import { users } from "@/lib/users"; // need to export `users` from lib/users.ts
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
 
   const user = users.find(u => u.email === email);
-  if (!user) {
-    return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    return NextResponse.json(
+      { message: "Invalid email or password" }, 
+      { status: 401 }
+    );
   }
 
-  const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) {
-    return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
-  }
-
+  // Create session and set cookie
   createSession(email);
+
+  // Respond after session is set
   return NextResponse.json({ message: "Login successful" });
 }
