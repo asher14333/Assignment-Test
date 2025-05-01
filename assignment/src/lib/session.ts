@@ -1,22 +1,22 @@
 // lib/session.ts
-import { cookies } from "next/headers";
+import crypto from "crypto";
 
-// In-memory session store (replace with database in production)
-const sessions = new Map<string, string>();
+// sessionId → userEmail
+export const sessions = new Map<string, string>();
 
-export function createSession(email: string) {
-  const sessionToken = Math.random().toString(36).substring(2);
-  sessions.set(sessionToken, email);
-  
-  cookies().set("session", sessionToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-  });
+/**
+ * Create a new session for `email` and return the sessionId.
+ */
+export function createSession(email: string): string {
+  const sessionId = crypto.randomUUID();
+  sessions.set(sessionId, email);
+  return sessionId;
 }
 
-export async function getSessionEmailServer() {
-  const sessionToken = cookies().get("session")?.value;
-  return sessionToken ? sessions.get(sessionToken) : null;
+/**
+ * Look up an email by sessionId. Returns null if not found.
+ */
+export function getSessionEmail(sessionId: string | null): string | null {
+  if (!sessionId) return null;
+  return sessions.get(sessionId) ?? null;
 }
